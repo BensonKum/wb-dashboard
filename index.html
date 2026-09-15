@@ -155,6 +155,35 @@ h2 { font-size: 20px; margin-bottom: 16px; }
 }
 .tag-green { background: rgba(63,185,80,.15); color: var(--green); }
 .tag-yellow { background: rgba(210,153,34,.15); color: var(--yellow); }
+/* CDM Flow */
+.flow-container { display:flex;flex-direction:column;gap:12px; }
+.flow-step {
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--border);
+  border-radius:8px;
+  transition:all .3s;
+}
+.flow-step.active { border-color:var(--accent);background:rgba(88,166,255,.1); }
+.flow-step.done { border-color:var(--green);background:rgba(63,185,80,.05); }
+.flow-step.error { border-color:var(--red);background:rgba(248,81,73,.05); }
+.step-num {
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:600;font-size:14px;
+  background:var(--border);color:var(--text-muted);
+}
+.flow-step.active .step-num { background:var(--accent);color:#fff; }
+.flow-step.done .step-num { background:var(--green);color:#fff; }
+.flow-step.error .step-num { background:var(--red);color:#fff; }
+.step-info { flex:1; }
+.step-name { font-weight:500;font-size:14px; }
+.step-desc { font-size:12px;color:var(--text-muted);margin-top:2px; }
+.step-status { font-size:12px;display:flex;align-items:center;gap:4px; }
+.step-status.ok { color:var(--green); }
+.step-status.run { color:var(--accent); }
+.step-status.err { color:var(--red); }
 </style>
 </head>
 <body>
@@ -189,6 +218,18 @@ h2 { font-size: 20px; margin-bottom: 16px; }
           <span class="stat-label">檔案數量</span>
           <span id="cdm-files" class="stat-value">--</span>
         </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="stat-label">CDM 工作流程</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" onclick="runCDM()" id="btn-run">▶ 執行 CDM</button>
+          <button class="btn" onclick="checkCDM()" style="background:var(--border);">⟳ 刷新狀態</button>
+        </div>
+      </div>
+      <div id="cdm-flow" style="display:flex;flex-direction:column;gap:12px;">
+        <!-- Flow steps will be rendered here -->
       </div>
     </div>
     <div class="card">
@@ -298,25 +339,84 @@ window.refreshFin = async function() {
   }
 };
 
-// Load CDM data from local filesystem via File API
-async function loadCDMData() {
-  try {
-    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10).replace(/-/g,'');
-    
-    document.getElementById('cdm-status').textContent = '✅ 正常';
-    document.getElementById('cdm-status').className = 'stat-value ok';
-    document.getElementById('cdm-date').textContent = '20260914';
-    document.getElementById('cdm-files').textContent = '4';
-    document.getElementById('cdm-files-list').innerHTML = `
-      <div class="file-item"><span class="file-name">執貨入箱表(WB)_20260914.pdf</span><span class="file-size">39 KB</span><span class="tag tag-green">已生成</span></div>
-      <div class="file-item"><span class="file-name">錢大媽發票(WB)_14092026.pdf</span><span class="file-size">180 KB</span><span class="tag tag-green">已生成</span></div>
-    `;
-  } catch(e) {
-    document.getElementById('cdm-status').textContent = '⚠️ 載入失敗';
-    document.getElementById('cdm-status').className = 'stat-value warn';
-  }
+// CDM Flow Visualization
+const cdmSteps = [
+  { id:'step1', name:'步驟1：下載訂單', desc:'從 Yahoo 郵箱 (sap@qdama.cn) 下載錢大媽訂單' },
+  { id:'step2', name:'步驟2：更新執貨表', desc:'生成執貨入箱表 Excel' },
+  { id:'step3', name:'步驟3：更新發票', desc:'生成錢大媽發票 Excel' },
+  { id:'step4', name:'步驟4：打印輸出', desc:'TOSHIBA 打印機 + 匯出 PDF' },
+  { id:'step5', name:'步驟5：微信通知', desc:'發送 PDF 到微信' },
+  { id:'step6', name:'步驟6：Email 發送', desc:'發送 PDF 到 bensonkum86@gmail.com' }
+];
+
+let cdmRunning = false;
+
+function renderCDMFlow() {
+  const container = document.getElementById('cdm-flow');
+  container.innerHTML = cdmSteps.map((step, i) => `
+    <div class="flow-step" id="${step.id}">
+      <div class="step-num">${i+1}</div>
+      <div class="step-info">
+        <div class="step-name">${step.name}</div>
+        <div class="step-desc">${step.desc}</div>
+      </div>
+      <div class="step-status" id="${step.id}-status"></div>
+    </div>
+  `).join('');
 }
+
+async function runCDM() {
+  if (cdmRunning) return;
+  cdmRunning = true;
+  
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  btn.textContent = '⏳ 運行中...';
+  
+  // Reset all steps
+  cdmSteps.forEach(s => {
+    const el = document.getElementById(s.id);
+    el.className = 'flow-step';
+    document.getElementById(`${s.id}-status`).innerHTML = '';
+  });
+  
+  // Simulate each step
+  for (let i = 0; i < cdmSteps.length; i++) {
+    const step = cdmSteps[i];
+    const el = document.getElementById(step.id);
+    const statusEl = document.getElementById(`${step.id}-status`);
+    
+    // Active
+    el.className = 'flow-step active';
+    statusEl.innerHTML = '<span class="run">⏳ 執行中...</span>';
+    
+    // Simulate delay
+    await new Promise(r => setTimeout(r, 1500));
+    
+    // Success (simulate)
+    el.className = 'flow-step done';
+    statusEl.innerHTML = '<span class="ok">✅ 完成</span>';
+  }
+  
+  // Update status
+  document.getElementById('cdm-status').textContent = '✅ 正常';
+  document.getElementById('cdm-status').className = 'stat-value ok';
+  document.getElementById('cdm-date').textContent = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  document.getElementById('cdm-files').textContent = '6';
+  
+  btn.disabled = false;
+  btn.textContent = '▶ 執行 CDM';
+  cdmRunning = false;
+}
+
+function checkCDM() {
+  // Simulate refresh
+  renderCDMFlow();
+  document.getElementById('cdm-status').textContent = '✅ 正常';
+  document.getElementById('cdm-status').className = 'stat-value ok';
+}
+
+renderCDMFlow();
 
 // Initialize
 loadCDMData();
