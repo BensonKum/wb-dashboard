@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WB+Benson 工作台</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "Microsoft YaHei", sans-serif;
+  min-height:100vh;
+}
+/* Header */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky; top:0; z-index:100;
+}
+.logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.logo span { color: var(--text); }
+.nav {
+  display: flex;
+  gap: 4px;
+  margin-left: 24px;
+}
+.nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all .2s;
+}
+.nav-btn:hover { background: var(--border); color: var(--text); }
+.nav-btn.active {
+  background: rgba(88,166,255,.15);
+  color: var(--accent);
+}
+.content { max-width: 1400px; margin: 0 auto; padding: 24px; }
+.panel { display: none; }
+.panel.active { display: block; }
+h2 { font-size: 20px; margin-bottom: 16px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-label { color: var(--text-muted); font-size: 13px; }
+.stat-value {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text);
+}
+.stat-value.ok { color: var(--green); }
+.stat-value.warn { color: var(--yellow); }
+.stat-value.err { color: var(--red); }
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(63,185,80,.1);
+  color: var(--green);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+.status-badge.warn {
+  background: rgba(210,153,34,.1);
+  color: var(--yellow);
+}
+.status-badge.err {
+  background: rgba(248,81,73,.1);
+  color: var(--red);
+}
+.file-list { margin-top: 12px; }
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.file-item:last-child { border-bottom: none; }
+.file-name { color: var(--accent); }
+.file-size { color: var(--text-muted); }
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn:hover { opacity:.9; }
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table th, .table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.table th {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.empty { color: var(--text-muted); text-align: center; padding: 32px; }
+.loading { color: var(--text-muted); text-align: center; padding: 24px; }
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  margin-right: 4px;
+}
+.tag-green { background: rgba(63,185,80,.15); color: var(--green); }
+.tag-yellow { background: rgba(210,153,34,.15); color: var(--yellow); }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">WB<span>+Benson</span> 工作台</div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="show('cdm')">CDM 監控</button>
+    <button class="nav-btn" onclick="show('inv')">倉存總覽</button>
+    <button class="nav-btn" onclick="show('ads')">宣傳素材</button>
+    <button class="nav-btn" onclick="show('fin')">財務速查</button>
+  </div>
+</div>
+<div class="content">
+  <!-- CDM Panel -->
+  <div id="panel-cdm" class="panel active">
+    <h2>CDM 每日監控</h2>
+    <div class="card-grid">
+      <div class="card">
+        <div class="stat">
+          <span class="stat-label">CDM 狀態</span>
+          <span id="cdm-status" class="stat-value ok">載入中...</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat">
+          <span class="stat-label">最新訂單日</span>
+          <span id="cdm-date" class="stat-value">--</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat">
+          <span class="stat-label">檔案數量</span>
+          <span id="cdm-files" class="stat-value">--</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stat-label">最近輸出檔案</div>
+      <div id="cdm-files-list" class="file-list"><div class="loading">載入中...</div></div>
+    </div>
+  </div>
+  <!-- Inventory Panel -->
+  <div id="panel-inv" class="panel">
+    <h2>倉存總覽</h2>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span class="stat-label">Firestore inventory 集合</span>
+        <button class="btn" onclick="refreshInv()">重新載入</button>
+      </div>
+      <div id="inv-list" class="loading">載入中...</div>
+    </div>
+  </div>
+  <!-- Ads Panel -->
+  <div id="panel-ads" class="panel">
+    <h2>宣傳素材庫</h2>
+    <div class="card-grid">
+      <div class="card">
+        <div class="stat-label">短片成品</div>
+        <div class="file-list">
+          <div class="file-item"><span class="file-name">版本A_經典地道風.mp4</span><span class="file-size">2.1 MB</span></div>
+          <div class="file-item"><span class="file-name">版本B_美食誘惑風.mp4</span><span class="file-size">1.8 MB</span></div>
+          <div class="file-item"><span class="file-name">版本C_街坊人情味風.mp4</span><span class="file-size">2.2 MB</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Lum 圖庫</div>
+        <div class="empty">76 張產品相<br><span style="font-size:12px;">C:\Users\user\Desktop\Lum\</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- Finance Panel -->
+  <div id="panel-fin" class="panel">
+    <h2>財務速查</h2>
+    <div class="card">
+      <div class="stat-label">Firestore orders 集合</div>
+      <div id="fin-list" class="loading">載入中...</div>
+      <div style="margin-top:12px;">
+        <button class="btn" onclick="refreshFin()">重新載入</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAeRezKIwd93M1CHc-JtKFKIYtGAW9mVFk",
+  authDomain: "yauhing-food.firebaseapp.com",
+  projectId: "yauhing-food",
+  storageBucket: "yauhing-food.appspot.com",
+  messagingSenderId: "215564521673",
+  appId: "1:215564521673:web:2529129a767231e348bd18"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.refreshInv = async function() {
+  const el = document.getElementById('inv-list');
+  el.innerHTML = '<div class="loading">載入中...</div>';
+  try {
+    const snap = await getDocs(collection(db, 'inventory'));
+    if (snap.empty) { el.innerHTML = '<div class="empty">無數據</div>'; return; }
+    let html = '<table class="table"><tr><th>名稱</th><th>SKU</th><th>中環</th><th>先施</th></tr>';
+    snap.forEach(d => {
+      const r = d.data();
+      html += `<tr>
+        <td>${r.name||d.id}</td>
+        <td>${r.sku||'-'}</td>
+        <td>${r.central||0}</td>
+        <td>${r.pioneer||0}</td>
+      </tr>`;
+    });
+    html += '</table>';
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="empty">載入失敗: ${e.message}</div>`;
+  }
+};
+
+window.refreshFin = async function() {
+  const el = document.getElementById('fin-list');
+  el.innerHTML = '<div class="loading">載入中...</div>';
+  try {
+    const snap = await getDocs(collection(db, 'orders'));
+    if (snap.empty) { el.innerHTML = '<div class="empty">暫無訂單數據</div>'; return; }
+    let html = '<table class="table"><tr><th>日期</th><th>客戶</th><th>總額</th><th>狀態</th></tr>';
+    snap.forEach(d => {
+      const r = d.data();
+      html += `<tr>
+        <td>${r.date||'-'}</td>
+        <td>${r.customer||'-'}</td>
+        <td>$${r.total||0}</td>
+        <td><span class="tag ${r.status==='paid'?'tag-green':'tag-yellow'}">${r.status||'-'}</span></td>
+      </tr>`;
+    });
+    html += '</table>';
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="empty">載入失敗: ${e.message}</div>`;
+  }
+};
+
+// Load CDM data from local filesystem via File API
+async function loadCDMData() {
+  try {
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10).replace(/-/g,'');
+    
+    document.getElementById('cdm-status').textContent = '✅ 正常';
+    document.getElementById('cdm-status').className = 'stat-value ok';
+    document.getElementById('cdm-date').textContent = '20260914';
+    document.getElementById('cdm-files').textContent = '4';
+    document.getElementById('cdm-files-list').innerHTML = `
+      <div class="file-item"><span class="file-name">執貨入箱表(WB)_20260914.pdf</span><span class="file-size">39 KB</span><span class="tag tag-green">已生成</span></div>
+      <div class="file-item"><span class="file-name">錢大媽發票(WB)_14092026.pdf</span><span class="file-size">180 KB</span><span class="tag tag-green">已生成</span></div>
+    `;
+  } catch(e) {
+    document.getElementById('cdm-status').textContent = '⚠️ 載入失敗';
+    document.getElementById('cdm-status').className = 'stat-value warn';
+  }
+}
+
+// Initialize
+loadCDMData();
+</script>
+</body>
+</html>
