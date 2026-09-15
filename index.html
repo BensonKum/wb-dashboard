@@ -353,6 +353,7 @@ let cdmRunning = false;
 
 function renderCDMFlow() {
   const container = document.getElementById('cdm-flow');
+  if (!container) return;
   container.innerHTML = cdmSteps.map((step, i) => `
     <div class="flow-step" id="${step.id}">
       <div class="step-num">${i+1}</div>
@@ -370,14 +371,19 @@ async function runCDM() {
   cdmRunning = true;
   
   const btn = document.getElementById('btn-run');
-  btn.disabled = true;
-  btn.textContent = '⏳ 運行中...';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ 運行中...';
+  }
   
   // Reset all steps
   cdmSteps.forEach(s => {
     const el = document.getElementById(s.id);
-    el.className = 'flow-step';
-    document.getElementById(`${s.id}-status`).innerHTML = '';
+    if (el) {
+      el.className = 'flow-step';
+      const statusEl = document.getElementById(`${s.id}-status`);
+      if (statusEl) statusEl.innerHTML = '';
+    }
   });
   
   // Simulate each step
@@ -385,6 +391,8 @@ async function runCDM() {
     const step = cdmSteps[i];
     const el = document.getElementById(step.id);
     const statusEl = document.getElementById(`${step.id}-status`);
+    
+    if (!el || !statusEl) continue;
     
     // Active
     el.className = 'flow-step active';
@@ -399,26 +407,41 @@ async function runCDM() {
   }
   
   // Update status
-  document.getElementById('cdm-status').textContent = '✅ 正常';
-  document.getElementById('cdm-status').className = 'stat-value ok';
-  document.getElementById('cdm-date').textContent = new Date().toISOString().slice(0,10).replace(/-/g,'');
-  document.getElementById('cdm-files').textContent = '6';
+  const statusEl = document.getElementById('cdm-status');
+  if (statusEl) {
+    statusEl.textContent = '✅ 正常';
+    statusEl.className = 'stat-value ok';
+  }
+  const dateEl = document.getElementById('cdm-date');
+  if (dateEl) dateEl.textContent = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const filesEl = document.getElementById('cdm-files');
+  if (filesEl) filesEl.textContent = '6';
   
-  btn.disabled = false;
-  btn.textContent = '▶ 執行 CDM';
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = '▶ 執行 CDM';
+  }
   cdmRunning = false;
 }
 
 function checkCDM() {
   // Simulate refresh
   renderCDMFlow();
-  document.getElementById('cdm-status').textContent = '✅ 正常';
-  document.getElementById('cdm-status').className = 'stat-value ok';
+  const statusEl = document.getElementById('cdm-status');
+  if (statusEl) {
+    statusEl.textContent = '✅ 正常';
+    statusEl.className = 'stat-value ok';
+  }
 }
 
-renderCDMFlow();
+// Make functions available globally
+window.runCDM = runCDM;
+window.checkCDM = checkCDM;
+window.refreshInv = refreshInv;
+window.refreshFin = refreshFin;
 
 // Initialize
+renderCDMFlow();
 loadCDMData();
 </script>
 </body>
