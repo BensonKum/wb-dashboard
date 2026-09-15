@@ -219,13 +219,20 @@ h2 { font-size: 20px; margin-bottom: 16px; }
           <span id="cdm-files" class="stat-value">--</span>
         </div>
       </div>
+      <div class="card">
+        <div class="stat">
+          <span class="stat-label">膠盒餘數 (WB)</span>
+          <span id="box-stock" class="stat-value">--</span>
+        </div>
+      </div>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <div class="stat-label">CDM 工作流程</div>
         <div style="display:flex;gap:8px;">
-          <button class="btn" onclick="runCDM()" id="btn-run">▶ 執行 CDM</button>
-          <button class="btn" onclick="checkCDM()" style="background:var(--border);">⟳ 刷新狀態</button>
+  <button class="btn" onclick="runCDM()" id="btn-run">▶ 執行 CDM</button>
+  <button class="btn" onclick="updateBoxStock()" style="background:var(--green);">📦 更新膠盒</button>
+  <button class="btn" onclick="checkCDM()" style="background:var(--border);">⟳ 刷新狀態</button>
         </div>
       </div>
       <div id="cdm-flow" style="display:flex;flex-direction:column;gap:12px;">
@@ -439,10 +446,53 @@ window.runCDM = runCDM;
 window.checkCDM = checkCDM;
 window.refreshInv = refreshInv;
 window.refreshFin = refreshFin;
+window.updateBoxStock = updateBoxStock;
+
+// CDM Box Stock Management (WB)
+const boxStockFile = 'C:/Users/user/Desktop/QClaw/CDM(發票及執貨表)/膠盒倉存.xlsx';
+
+async function loadBoxStock() {
+  // Load from localStorage (simulated)
+  const saved = localStorage.getItem('boxStock');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      document.getElementById('box-stock').textContent = data.stock || '--';
+      return data;
+    } catch(e) {}
+  }
+  return null;
+}
+
+async function updateBoxStock() {
+  // Show input dialog for manual entry
+  const currentStock = localStorage.getItem('boxStock');
+  let currentValue = '';
+  if (currentStock) {
+    try {
+      const data = JSON.parse(currentStock);
+      currentValue = data.stock || '';
+    } catch(e) {}
+  }
+  
+  const newStock = prompt('请输入胶盒剩余数量 (WB):\n\n当前值: ' + (currentValue || '无记录'), currentValue);
+  
+  if (newStock !== null && newStock.trim() !== '') {
+    const data = {
+      stock: parseInt(newStock.trim()) || 0,
+      date: new Date().toISOString(),
+      lastUpdated: new Date().toLocaleString('zh-HK')
+    };
+    localStorage.setItem('boxStock', JSON.stringify(data));
+    document.getElementById('box-stock').textContent = data.stock;
+    alert('✅ 胶盒仓存已更新！\n日期: ' + data.lastUpdated + '\n余数: ' + data.stock);
+  }
+}
 
 // Initialize
 renderCDMFlow();
 loadCDMData();
+loadBoxStock();
 </script>
 </body>
 </html>
