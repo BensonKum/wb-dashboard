@@ -184,11 +184,49 @@ h2 { font-size: 20px; margin-bottom: 16px; }
 .step-status.ok { color:var(--green); }
 .step-status.run { color:var(--accent); }
 .step-status.err { color:var(--red); }
+/* 手機版：漢堡選單 */
+.hamburger {
+  display: none;
+  background: var(--border);
+  border: none;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: auto;
+}
+@media (max-width: 640px) {
+  .header {
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  .logo { font-size: 16px; }
+  .hamburger { display: block; }
+  .nav {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 4px;
+    gap: 4px;
+  }
+  .nav.open { display: flex; }
+  .nav-btn {
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+  }
+}
 </style>
 </head>
 <body>
 <div class="header">
   <div class="logo">WB<span>+Benson</span> 工作台</div>
+  <button class="hamburger" onclick="toggleNav()" aria-label="選單">☰</button>
   <div class="nav">
     <button class="nav-btn active" onclick="show('cdm')">CDM 監控</button>
     <button class="nav-btn" onclick="show('inv')">倉存總覽</button>
@@ -493,6 +531,18 @@ async function updateBoxStock() {
 renderCDMFlow();
 loadCDMData();
 loadBoxStock();
+
+// 手機版選單切換
+function toggleNav() {
+  document.querySelector('.nav').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  const nav = document.querySelector('.nav');
+  const ham = document.querySelector('.hamburger');
+  if (nav.classList.contains('open') && !nav.contains(e.target) && ham && !ham.contains(e.target)) {
+    nav.classList.remove('open');
+  }
+});
 </script>
 </body>
 </html>
